@@ -4,8 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
-import ru.practicum.DtoStatistic;
-import ru.practicum.EndpointHit;
+import ru.practicum.StatisticDto;
 import ru.practicum.ViewStats;
 import ru.practicum.model.Statistic;
 
@@ -18,9 +17,9 @@ public interface StatisticMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "timestamp", source = "timestamp", qualifiedByName = "mapTimestamp")
-    Statistic toStatistic(DtoStatistic dtoStatistic);
+    Statistic toStatistic(StatisticDto statisticDto);
 
-    EndpointHit toEndpointHit(Statistic statistic);
+    StatisticDto toStatisticDto(Statistic statistic);
 
     @Mapping(target = "hits", source = "hits")
     ViewStats toViewStats(Statistic statistic, int hits);

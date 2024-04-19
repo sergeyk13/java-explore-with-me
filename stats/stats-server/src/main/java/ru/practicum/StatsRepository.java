@@ -19,4 +19,6 @@ public interface StatsRepository extends JpaRepository<Statistic, Long> {
     List<String> findUniqueIpsBetween(@Param("uri") String uri, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     int countByUriAndTimestampBetween(String uri, LocalDateTime start, LocalDateTime end);
+
+    Statistic findFirstByUri(String uri);
 }

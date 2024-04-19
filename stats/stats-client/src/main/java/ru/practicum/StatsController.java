@@ -2,6 +2,7 @@ package ru.practicum;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.annotation.Validated;
@@ -12,8 +13,9 @@ import javax.validation.Valid;
 import javax.validation.ValidationException;
 import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import static ru.practicum.constant.StringConstant.FORMATTER;
 
 @Controller
 @RequiredArgsConstructor
@@ -21,24 +23,21 @@ import java.util.List;
 @Validated
 public class StatsController {
     private final Client client;
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @PostMapping("/hit")
     @ResponseStatus(HttpStatus.CREATED)
-    public EndpointHit postHit(@RequestBody @Valid DtoStatistic statistic) {
+    public StatisticDto postHit(@RequestBody @Valid StatisticDto statistic) {
         return client.post("/hit", statistic);
     }
 
     @GetMapping("/stats")
     @ResponseStatus(HttpStatus.OK)
-    public List<ViewStats> getStats(@RequestParam @NotBlank String start,
-                                    @RequestParam @NotBlank String end,
+    public List<ViewStats> getStats(@RequestParam @NotBlank @DateTimeFormat(pattern = FORMATTER) LocalDateTime start,
+                                    @RequestParam @NotBlank @DateTimeFormat(pattern = FORMATTER) LocalDateTime end,
                                     @RequestParam(required = false) List<String> uris,
-                                    @RequestParam boolean unique) {
+                                    @RequestParam(defaultValue = "false") boolean unique) {
 
-        LocalDateTime startTime = LocalDateTime.parse(start, formatter);
-        LocalDateTime endTime = LocalDateTime.parse(end, formatter);
-        if (startTime.isAfter(endTime)) {
+        if (start.isAfter(end)) {
             log.error("Start time is after end time");
             throw new ValidationException("Не верно указан запрос дат");
         }

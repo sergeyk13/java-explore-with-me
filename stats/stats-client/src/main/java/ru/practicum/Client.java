@@ -24,8 +24,8 @@ public class Client {
                 .build();
     }
 
-    public EndpointHit post(String url, DtoStatistic body) {
-        return restTemplate.postForObject(url, body, EndpointHit.class);
+    public StatisticDto post(String url, StatisticDto body) {
+        return restTemplate.postForObject(url, body, StatisticDto.class);
     }
 
     public List<ViewStats> get(String urlWithParams) {
