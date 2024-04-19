@@ -15,14 +15,13 @@ import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static ru.practicum.constant.StringConstant.FORMATTER;
-
 @Controller
 @RequiredArgsConstructor
 @Slf4j
 @Validated
 public class StatsController {
     private final Client client;
+    private final String FORMATTER = "yyyy-MM-dd HH:mm:ss";
 
     @PostMapping("/hit")
     @ResponseStatus(HttpStatus.CREATED)
