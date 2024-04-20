@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 public class Statistic {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Min(1)
     private long id;
     @NotBlank
     private String app;
