@@ -49,7 +49,7 @@ public class CategoryController {
 
     @GetMapping("/categories")
     public List<CategoryDto> getAllCategories(
-            @RequestParam(required = false ,name = "from", defaultValue = "0") @PositiveOrZero int from,
+            @RequestParam(required = false, name = "from", defaultValue = "0") @PositiveOrZero int from,
             @RequestParam(required = false, name = "size", defaultValue = "10") @PositiveOrZero int size) {
         log.info("Get all categories");
         return categoryService.getCategoties(from, size);

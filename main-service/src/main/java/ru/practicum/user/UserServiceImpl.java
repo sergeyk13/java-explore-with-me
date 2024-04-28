@@ -14,7 +14,6 @@ import ru.practicum.user.model.User;
 import ru.practicum.util.MapperPageToList;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor

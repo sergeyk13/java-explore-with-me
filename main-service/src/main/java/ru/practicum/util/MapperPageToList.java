@@ -15,4 +15,12 @@ public class MapperPageToList {
                 .map(mapper)
                 .collect(Collectors.toList());
     }
+
+    public static <T> List<T> mapPageToList(Page<T> page, int from, int size) {
+        int elementOnPage = from % size;
+        return page.stream()
+                .skip(elementOnPage)
+                .limit(size)
+                .collect(Collectors.toList());
+    }
 }

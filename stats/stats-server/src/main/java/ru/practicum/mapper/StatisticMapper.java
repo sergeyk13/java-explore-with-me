@@ -25,6 +25,7 @@ public interface StatisticMapper {
     ViewStats toViewStats(Statistic statistic, int hits);
 
     @Named("mapTimestamp")
+
     default LocalDateTime mapTimestamp(String timestamp) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return LocalDateTime.parse(timestamp, formatter);

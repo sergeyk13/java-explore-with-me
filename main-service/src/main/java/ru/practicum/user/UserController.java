@@ -29,7 +29,7 @@ public class UserController {
 
     @GetMapping
     public List<UserDto> getUsers(@RequestParam List<Long> ids,
-                                  @RequestParam(required = false ,name = "from", defaultValue = "0") @PositiveOrZero int from,
+                                  @RequestParam(required = false, name = "from", defaultValue = "0") @PositiveOrZero int from,
                                   @RequestParam(required = false, name = "size", defaultValue = "10") @PositiveOrZero int size) {
         log.info("Get users: {}", ids);
         return userService.getUsers(ids, from, size);

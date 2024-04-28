@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.category.dto.CategoryDto;
 import ru.practicum.category.dto.CategoryShortDto;
 import ru.practicum.category.model.Category;
+import ru.practicum.error.model.NotFoundException;
 import ru.practicum.util.MapperPageToList;
 
 import java.util.List;
@@ -39,7 +40,7 @@ public class CategoryServiceImpl implements CategoryService {
     @Transactional
     public CategoryDto updateCategory(CategoryShortDto shortDto, long catId) {
         Category category = categoryRepository.findById(catId).orElseThrow(() ->
-                new RuntimeException(String.format("Request with ID:%d not found",catId)));
+                new NotFoundException(String.format("Category with ID:%d not found", catId)));
         category.setName(shortDto.getName());
 
         log.info("Updating category: {}", category);
@@ -52,7 +53,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDto getCategory(long catId) {
         log.info("Getting category by id: {}", catId);
         return CategoryMapper.INSTANCE.toDto(categoryRepository.findById(catId).orElseThrow(() ->
-                new RuntimeException(String.format("Request with ID:%d not found",catId))));
+                new NotFoundException(String.format("Category with ID:%d not found", catId))));
     }
 
     @Override
@@ -61,6 +62,6 @@ public class CategoryServiceImpl implements CategoryService {
         Sort sortById = Sort.by(Sort.Direction.DESC, "id");
         Pageable page = PageRequest.of(from, size, sortById);
         Page<Category> categoryPage = categoryRepository.findAll(page);
-        return MapperPageToList.mapPageToList(categoryPage,from,size, CategoryMapper.INSTANCE::toDto);
+        return MapperPageToList.mapPageToList(categoryPage, from, size, CategoryMapper.INSTANCE::toDto);
     }
 }
