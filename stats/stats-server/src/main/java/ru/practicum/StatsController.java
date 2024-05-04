@@ -13,7 +13,7 @@ import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static ru.practicum.constant.StringConstant.FORMAT;
+import static ru.practicum.constant.StringConstant.FORMAT_GET;
 
 @RestController
 @AllArgsConstructor
@@ -32,8 +32,8 @@ public class StatsController {
 
     @GetMapping("/stats")
     @ResponseStatus(HttpStatus.OK)
-    public List<ViewStats> getStats(@RequestParam @NotBlank @DateTimeFormat(pattern = FORMAT) LocalDateTime start,
-                                    @RequestParam @NotBlank @DateTimeFormat(pattern = FORMAT) LocalDateTime end,
+    public List<ViewStats> getStats(@RequestParam @NotBlank @DateTimeFormat(pattern = FORMAT_GET) LocalDateTime start,
+                                    @RequestParam @NotBlank @DateTimeFormat(pattern = FORMAT_GET) LocalDateTime end,
                                     @RequestParam(required = false) List<String> uris,
                                     @RequestParam(defaultValue = "false") boolean unique) {
 

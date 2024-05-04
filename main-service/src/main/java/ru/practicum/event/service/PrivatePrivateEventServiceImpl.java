@@ -55,8 +55,9 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
         event.setViews(0);
         locationRepository.save(newEventDto.getLocation());
         log.info("Save location: {}", newEventDto.getLocation());
-        log.info("Created new event");
-        return EventMapper.INSTANCE.toEventFullDto(eventRepository.save(event));
+        event = eventRepository.save(event);
+        log.info("Created new event: {}", event.getId());
+        return EventMapper.INSTANCE.toEventFullDto(event);
     }
 
 
@@ -76,7 +77,7 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
     public EventFullDto findEvent(long userId, long eventId) {
         User user = checkUser(userId);
         Event event = checkEvent(eventId);
-        isItirator(user, event);
+        isIterator(user, event);
         log.info("Get event: {}", event);
         return EventMapper.INSTANCE.toEventFullDto(event);
     }
@@ -86,32 +87,59 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
     public EventFullDto updateEvent(long userId, long eventId, UpdateEventUserRequest updateEventUserRequest) {
         User user = checkUser(userId);
         Event event = checkEvent(eventId);
-        isItirator(user, event);
-        EventFullDto eventFullDto;
-        updateEventUserRequest.getAnnotation().ifPresent(event::setAnnotation);
-        updateEventUserRequest.getCategory().ifPresent(event::setCategory);
-        updateEventUserRequest.getConfirmedRequests().ifPresent(event::setConfirmedRequests);
-        updateEventUserRequest.getDescription().ifPresent(event::setDescription);
-        try {
-            updateEventUserRequest.getEventDate().ifPresent(eventDate -> event.setEventDate(LocalDateTime.parse(eventDate, FORMATTER)));
-        } catch (DateTimeParseException e) {
-            log.error("Error parsing event date", e);
-            throw new ValidationException("Unable to parse event date", e.getCause());
+        isIterator(user, event);
+
+        if (updateEventUserRequest.getAnnotation() != null) {
+            event.setAnnotation(updateEventUserRequest.getAnnotation());
         }
-        updateEventUserRequest.getLocation().ifPresent(event::setLocation);
-        updateEventUserRequest.getPaid().ifPresent(event::setPaid);
-        updateEventUserRequest.getParticipantLimit().ifPresent(event::setParticipantLimit);
-        updateEventUserRequest.getRequestModeration().ifPresent(event::setRequestModeration);
-        updateEventUserRequest.getState().ifPresent(event::setState);
-        updateEventUserRequest.getTitle().ifPresent(event::setTitle);
+        if (updateEventUserRequest.getCategory() != null) {
+            event.setCategory(updateEventUserRequest.getCategory());
+        }
+        if (updateEventUserRequest.getConfirmedRequests() != null) {
+            event.setConfirmedRequests(updateEventUserRequest.getConfirmedRequests());
+        }
+        if (updateEventUserRequest.getDescription() != null) {
+            event.setDescription(updateEventUserRequest.getDescription());
+        }
+        if (updateEventUserRequest.getEventDate() != null) {
+            setEventDate(event, updateEventUserRequest.getEventDate());
+        }
+        if (updateEventUserRequest.getLocation() != null) {
+            event.setLocation(updateEventUserRequest.getLocation());
+        }
+        if (updateEventUserRequest.getPaid() != null) {
+            event.setPaid(updateEventUserRequest.getPaid());
+        }
+        if (updateEventUserRequest.getParticipantLimit() != null) {
+            event.setParticipantLimit(updateEventUserRequest.getParticipantLimit());
+        }
+        if (updateEventUserRequest.getRequestModeration() != null) {
+            event.setRequestModeration(updateEventUserRequest.getRequestModeration());
+        }
+        if (updateEventUserRequest.getState() != null) {
+            event.setState(updateEventUserRequest.getState());
+        }
+        if (updateEventUserRequest.getTitle() != null) {
+            event.setTitle(updateEventUserRequest.getTitle());
+        }
+
         try {
-            eventFullDto = EventMapper.INSTANCE.toEventFullDto(event);
+            EventFullDto eventFullDto = EventMapper.INSTANCE.toEventFullDto(event);
             Validation.checkValidation(eventFullDto);
-            log.info("Update event: {}", event);
+            log.info("Updating event: {}", event.getId());
             return eventFullDto;
         } catch (ConstraintViolationException e) {
             log.error("Error parsing event", e);
             throw new ValidationException(e.getMessage(), e.getCause());
+        }
+    }
+
+    private void setEventDate(Event event, String date) {
+        try {
+            event.setEventDate(LocalDateTime.parse(date, FORMATTER));
+        } catch (DateTimeParseException e) {
+            log.error("Error parsing event date", e);
+            throw new ValidationException("Unable to parse event date", e.getCause());
         }
     }
 
@@ -136,7 +164,7 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
         });
     }
 
-    private void isItirator(User user, Event event) {
+    private void isIterator(User user, Event event) {
         if (!event.getInitiator().equals(user)) {
             log.error("User:{} not initiator for event:{}", user.getId(), event.getId());
             throw new NotFoundException("Event where user: " + user.getId() + " not found");

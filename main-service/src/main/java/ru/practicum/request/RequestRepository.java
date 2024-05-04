@@ -1,6 +1,7 @@
 package ru.practicum.request;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import ru.practicum.event.model.Event;
 import ru.practicum.request.model.Request;
@@ -12,7 +13,11 @@ import java.util.Optional;
 @Repository
 public interface RequestRepository extends JpaRepository<Request, Long> {
 
-    Optional<Request> findByEventAndRequester(Event event, User requester);
+    @Query("SELECT r FROM Request r WHERE r.event.id = :eventId AND r.requester.id = :userId")
+    Optional<Request> findByEventIdAndRequesterId(Long eventId, Long userId);
+
+    List<Request> findAllByEvent(Event event);
+
 
     Long countByEvent(Event event);
 

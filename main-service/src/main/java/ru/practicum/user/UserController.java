@@ -22,16 +22,16 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDto postUser(@Valid @RequestBody final UserShortDto userShortDto) {
+    public UserDto postUser(@RequestBody @Valid UserShortDto userShortDto) {
         log.info("Post user: {}", userShortDto);
         return userService.postUser(userShortDto);
     }
 
     @GetMapping
-    public List<UserDto> getUsers(@RequestParam List<Long> ids,
+    public List<UserDto> getUsers(@RequestParam(required = false) List<Long> ids,
                                   @RequestParam(required = false, name = "from", defaultValue = "0") @PositiveOrZero int from,
                                   @RequestParam(required = false, name = "size", defaultValue = "10") @PositiveOrZero int size) {
-        log.info("Get users: {}", ids);
+        log.info("Getting users: {} , page from: {}, size: {}", ids, from, size);
         return userService.getUsers(ids, from, size);
     }
 

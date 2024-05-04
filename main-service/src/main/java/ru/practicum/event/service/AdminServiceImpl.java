@@ -33,14 +33,14 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EventFullDto> getEvents(List<Long> users, List<String> states, List<Long> categories, String rengeStart,
-                                        String rengeEnd, int from, int size) {
+    public List<EventFullDto> getEvents(List<Long> users, List<String> states, List<Long> categories, String rangeStart,
+                                        String rangeEnd, int from, int size) {
         checkState(states);
         Sort sortById = Sort.by(Sort.Direction.DESC, "id");
         Pageable page = PageRequest.of(from, size, sortById);
 
-        LocalDateTime start = LocalDateTime.parse(rengeStart, FORMATTER);
-        LocalDateTime end = LocalDateTime.parse(rengeEnd, FORMATTER);
+        LocalDateTime start = LocalDateTime.parse(rangeStart, FORMATTER);
+        LocalDateTime end = LocalDateTime.parse(rangeEnd, FORMATTER);
 
         Page<Event> eventPage = eventRepository.findAllByInitiatorInAndStateInAndCategoryIdInAndEventDateBetween(users,
                 states, categories, start, end, page);
@@ -52,21 +52,54 @@ public class AdminServiceImpl implements AdminService {
     public EventFullDto updateEvent(long eventId, UpdateEventAdminRequest eventAdminRequest) {
         Event event = eventRepository.findById(eventId).orElseThrow(() -> new ValidationException("Event not found"));
         EventFullDto eventFullDto;
-        eventAdminRequest.getAnnotation().ifPresent(event::setAnnotation);
-        eventAdminRequest.getCategory().ifPresent(event::setCategory);
-        eventAdminRequest.getDescription().ifPresent(event::setDescription);
+
+
+        if (eventAdminRequest.getAnnotation() != null) {
+            event.setAnnotation(eventAdminRequest.getAnnotation());
+        }
+        if (eventAdminRequest.getCategory() != null) {
+            event.setCategory(eventAdminRequest.getCategory());
+        }
+        if (eventAdminRequest.getDescription() != null) {
+            event.setDescription(eventAdminRequest.getDescription());
+        }
         try {
-            eventAdminRequest.getEventDate().ifPresent(eventDate -> event.setEventDate(LocalDateTime.parse(eventDate, FORMATTER)));
+            if (eventAdminRequest.getEventDate() != null) {
+                event.setEventDate(LocalDateTime.parse(eventAdminRequest.getEventDate(), FORMATTER));
+            }
         } catch (DateTimeParseException e) {
             log.error("Error parsing event date", e);
             throw new ValidationException("Unable to parse event date", e.getCause());
         }
-        eventAdminRequest.getLocation().ifPresent(event::setLocation);
-        eventAdminRequest.getPaid().ifPresent(event::setPaid);
-        eventAdminRequest.getParticipantLimit().ifPresent(event::setParticipantLimit);
-        eventAdminRequest.getRequestModeration().ifPresent(event::setRequestModeration);
-        eventAdminRequest.getState().ifPresent(event::setState);
-        eventAdminRequest.getTitle().ifPresent(event::setTitle);
+        if (eventAdminRequest.getLocation() != null) {
+            event.setLocation(eventAdminRequest.getLocation());
+        }
+        if (eventAdminRequest.getPaid() != null) {
+            event.setPaid(eventAdminRequest.getPaid());
+        }
+        if (eventAdminRequest.getParticipantLimit() != null) {
+            event.setParticipantLimit(eventAdminRequest.getParticipantLimit());
+        }
+        if (eventAdminRequest.getRequestModeration() != null) {
+            event.setRequestModeration(eventAdminRequest.getRequestModeration());
+        }
+        if (eventAdminRequest.getStateAction() != null) {
+            switch (eventAdminRequest.getStateAction()) {
+                case PUBLISH_EVENT:
+                    event.setPublishedOn(LocalDateTime.now());
+                    event.setState(State.PUBLISHED);
+                    log.info("Event :{} published at: {}", event.getId(), LocalDateTime.now().format(FORMATTER));
+                    break;
+                case REJECT_EVENT:
+                    event.setState(State.CANCELED);
+                    log.info("Event :{} at canceled: {}", event.getId(), LocalDateTime.now().format(FORMATTER));
+                    break;
+            }
+        }
+        if (eventAdminRequest.getTitle() != null) {
+            event.setTitle(eventAdminRequest.getTitle());
+        }
+
         try {
             eventFullDto = EventMapper.INSTANCE.toEventFullDto(event);
             Validation.checkValidation(eventFullDto);

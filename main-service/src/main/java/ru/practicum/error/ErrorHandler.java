@@ -8,6 +8,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -16,15 +17,18 @@ import ru.practicum.error.model.NotFoundException;
 import ru.practicum.error.model.ValidationException;
 
 import javax.persistence.EntityNotFoundException;
+import javax.validation.ConstraintViolation;
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+
+import static ru.practicum.util.Constant.FORMATTER;
 
 @Slf4j
 @RestControllerAdvice
 public class ErrorHandler {
-    private List<ApiError> errors = new ArrayList<>();
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -34,7 +38,7 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public List<ApiError> handleNotFoundException(final NotFoundException e) {
         log.error(e.getMessage());
         return buildApiError(HttpStatus.BAD_REQUEST, e);
@@ -42,12 +46,35 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public List<ApiError> handleMissingServletRequestParameterException(final MissingServletRequestParameterException e) {
+        log.error(e.getMessage());
+        return buildApiError(HttpStatus.BAD_REQUEST, e);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public List<ApiError> handleConstraintViolationException(final javax.validation.ConstraintViolationException e) {
+        String errorMessage = e.getMessage();
+        Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
+        for (ConstraintViolation<?> violation : violations) {
+            errorMessage = violation.getPropertyPath().toString() + ": " + violation.getMessage();
+        }
+        log.error(errorMessage);
+        ValidationException validationException = new ValidationException(errorMessage);
+        validationException.setCause(e.getCause());
+        return buildApiError(HttpStatus.BAD_REQUEST, validationException);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public List<ApiError> handleDefaultValidation(final MethodArgumentNotValidException e) {
         FieldError fieldError = e.getBindingResult().getFieldError();
         String fieldName = fieldError.getField();
-        String errorMessage = fieldError.getDefaultMessage();
+        String errorMessage = fieldName + ": " + fieldError.getDefaultMessage();
         log.error(errorMessage);
-        return buildApiError(HttpStatus.BAD_REQUEST, e);
+        ValidationException validationException = new ValidationException(errorMessage);
+        validationException.setCause(e.getCause());
+        return buildApiError(HttpStatus.BAD_REQUEST, validationException);
     }
 
 
@@ -93,20 +120,39 @@ public class ErrorHandler {
         return buildApiError(HttpStatus.INTERNAL_SERVER_ERROR, e);
     }
 
-    @ExceptionHandler({DataIntegrityViolationException.class, DataAccessException.class})
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public List<ApiError> handleForeignKeyViolation(DataIntegrityViolationException e) {
-        log.error(cleanErrorMessage(e.getMessage()));
-        return buildApiError(HttpStatus.CONFLICT, e);
-    }
+//    @ExceptionHandler({DataIntegrityViolationException.class, DataAccessException.class})
+//    @ResponseStatus(HttpStatus.CONFLICT)
+//    public List<ApiError> handleForeignKeyViolation(DataIntegrityViolationException e) {
+//        log.error(cleanErrorMessage(e.getMessage()));
+//        return buildApiError(HttpStatus.CONFLICT, e);
+//    }
 
     private List<ApiError> buildApiError(HttpStatus status, Throwable exception) {
-        String cause = (exception.getCause() != null) ? exception.getCause().toString() : "Unknown cause";
+        List<ApiError> errors = new ArrayList<>();
+        String cause;
+        if (exception.getCause() == null) {
+            switch (status) {
+                case BAD_REQUEST:
+                    cause = "Incorrectly made request.";
+                    break;
+                case CONFLICT:
+                    cause = "Integrity constraint has been violated.";
+                    break;
+                case NOT_FOUND:
+                    cause = "The required object was not found.";
+                    break;
+                default:
+                    cause = "Unknown cause";
+                    break;
+            }
+        } else {
+            cause = exception.getCause().toString();
+        }
         errors.add(new ApiError(
                 exception.getMessage(),
                 cause,
                 status.toString(),
-                LocalDateTime.now().toString()));
+                LocalDateTime.now().format(FORMATTER)));
         return errors;
     }
 
@@ -118,6 +164,6 @@ public class ErrorHandler {
             }
             return errorMessage;
         }
-        return errorMessage;
+        return null;
     }
 }

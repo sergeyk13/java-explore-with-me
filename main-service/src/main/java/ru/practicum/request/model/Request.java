@@ -25,5 +25,6 @@ public class Request {
     @ManyToOne
     private User requester;
     @NotNull
+    @Enumerated(EnumType.STRING)
     private Status status;
 }

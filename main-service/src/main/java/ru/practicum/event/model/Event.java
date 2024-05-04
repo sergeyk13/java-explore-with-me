@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.category.model.Category;
+import ru.practicum.compilations.model.Compilation;
 import ru.practicum.user.model.User;
 
 import javax.persistence.*;
@@ -55,4 +56,6 @@ public class Event {
     private long views;
     @NotNull
     private boolean available = true;
+    @ManyToOne
+    private Compilation compilation;
 }

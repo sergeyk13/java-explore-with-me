@@ -31,9 +31,14 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<UserDto> getUsers(List<Long> ids, int from, int size) {
-        Sort sortById = Sort.by(Sort.Direction.DESC, "id");
+        Sort sortById = Sort.by(Sort.Direction.ASC, "id");
         Pageable page = PageRequest.of(from, size, sortById);
-        Page<User> usersPage = userRepository.findAllByIdIn(ids, page);
+        Page<User> usersPage;
+        if (ids != null && !ids.isEmpty()) {
+            usersPage = userRepository.findAllByIdIn(ids, page);
+        } else {
+            usersPage = userRepository.findAll(page);
+        }
         log.info("Get users: {}", usersPage);
         return MapperPageToList.mapPageToList(usersPage, from, size, UserMapper.INSTANCE::toUserDto);
     }

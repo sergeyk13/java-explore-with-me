@@ -4,9 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.Email;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.*;
 
 @Data
 @AllArgsConstructor
@@ -17,5 +15,7 @@ public class UserDto {
     @Email
     private String email;
     @NotBlank
+    @Size(min = 6)
+    @Pattern(regexp = "^[a-zA-Z]+$", message = "Должны быть только символы")
     private String name;
 }

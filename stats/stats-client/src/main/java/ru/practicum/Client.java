@@ -12,11 +12,13 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Component
 public class Client {
     private final RestTemplate restTemplate;
+    public final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     public Client(@Value("http://localhost:9090") String serverUrl, RestTemplateBuilder builder) {
 
@@ -31,10 +33,11 @@ public class Client {
     }
 
     public List<ViewStats> get(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
-
+        String startString = start.format(FORMATTER);
+        String endString = end.format(FORMATTER);
         UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/stats")
-                .queryParam("start", start)
-                .queryParam("end", end)
+                .queryParam("start", startString)
+                .queryParam("end", endString)
                 .queryParam("unique", unique);
 
         if (uris != null) {

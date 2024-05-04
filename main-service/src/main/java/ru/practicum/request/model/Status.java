@@ -5,6 +5,7 @@ import java.util.Optional;
 public enum Status {
     PENDING,
     CONFIRMED,
+    CANCELED,
     REJECTED;
 
     public static Optional<Status> from(String stringState) {
