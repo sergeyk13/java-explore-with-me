@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.util.List;
 
 @Data
@@ -14,5 +15,6 @@ public class NewCompilationDto {
     private List<Long> events;
     private boolean pinned = false;
     @NotBlank
+    @Size(min = 3, max = 50, message = "Длина name должна быть от {min} до {max} символов")
     private String title;
 }

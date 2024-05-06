@@ -3,7 +3,6 @@ package ru.practicum.event.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.practicum.category.model.Category;
 import ru.practicum.event.model.Location;
 import ru.practicum.event.model.StateAction;
 
@@ -12,7 +11,7 @@ import ru.practicum.event.model.StateAction;
 @NoArgsConstructor
 public class UpdateEventAdminRequest {
     private String annotation;
-    private Category category;
+    private Long category;
     private String description;
     private String eventDate;
     private Location location;

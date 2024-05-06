@@ -15,5 +15,5 @@ public interface PrivateEventService {
 
     EventFullDto findEvent(long userId, long eventId);
 
-    EventFullDto updateEvent(long userId, long evetId, UpdateEventUserRequest updateEventUserRequest);
+    EventFullDto updateEvent(long userId, long eventId, UpdateEventUserRequest updateEventUserRequest);
 }

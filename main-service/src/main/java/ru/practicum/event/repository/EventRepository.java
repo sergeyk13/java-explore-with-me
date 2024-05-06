@@ -2,6 +2,7 @@ package ru.practicum.event.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import ru.practicum.event.model.Event;
@@ -19,18 +20,24 @@ import java.util.Optional;
 public interface EventRepository extends JpaRepository<Event, Long> {
     Page<Event> findAllByInitiator(User user, Pageable pageable);
 
-    Page<Event> findAllByInitiatorInAndStateInAndCategoryIdInAndEventDateBetween(List<Long> users,
-                                                                                 List<String> states,
-                                                                                 List<Long> categories,
-                                                                                 LocalDateTime startDate,
-                                                                                 LocalDateTime endDate,
-                                                                                 Pageable pageable);
+    Page<Event> findAll(Specification<Event> spec, Pageable pageable);
 
-    Page<Event> findAllByStateAndAnnotationContainingIgnoreCaseAndCategoryIdInAndPaidAndEventDateBetweenAndAvailable(
-            @NotNull State state, @NotBlank String annotation, Collection<Long> category_id, @NotNull boolean paid, @NotNull LocalDateTime eventDate, @NotNull LocalDateTime eventDate2, @NotNull boolean available, Pageable pageable);
+    Page<Event> findAllByStateAndAnnotationContainingIgnoreCaseAndCategoryIdInAndPaidAndEventDateBetween(
+            @NotNull State state,
+            @NotBlank String annotation,
+            Collection<Long> categoryId,
+            @NotNull boolean paid,
+            @NotNull LocalDateTime eventStart,
+            @NotNull LocalDateTime eventEnd,
+            Pageable pageable);
 
-    Page<Event> findAllByStateAndAnnotationContainingIgnoreCaseAndCategoryIdInAndPaidAndEventDateAfterAndAvailable(
-            @NotNull State state, @NotBlank String annotation, Collection<Long> category_id, @NotNull boolean paid, @NotNull LocalDateTime eventDate, @NotNull boolean available, Pageable pageable);
+    Page<Event> findAllByStateAndAnnotationContainingIgnoreCaseAndCategoryIdInAndPaidAndEventDateAfter(
+            @NotNull State state,
+            @NotBlank String annotation,
+            Collection<Long> category_id,
+            @NotNull boolean paid,
+            @NotNull LocalDateTime eventDate,
+            Pageable pageable);
 
     Page<Event> findAllByPaidAndEventDateAfter(boolean paid, LocalDateTime endDate, Pageable pageable);
 

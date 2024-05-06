@@ -6,12 +6,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.Client;
 import ru.practicum.StatisticDto;
 import ru.practicum.ViewStats;
+import ru.practicum.category.CategoryRepository;
+import ru.practicum.category.model.Category;
 import ru.practicum.error.model.NotFoundException;
-import ru.practicum.error.model.ValidationException;
+import ru.practicum.event.EventSpecifications;
+import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.mapper.EventMapper;
 import ru.practicum.event.model.Event;
@@ -33,36 +38,43 @@ public class PublicServiceImpl implements PublicService {
 
     private final EventRepository eventRepository;
     private final Client statssClient;
+    private final CategoryRepository categoryRepository;
 
     @Override
-    public List<EventShortDto> getEvents(String text, List<Long> categories, boolean paid, LocalDateTime rangeStart,
-                                         LocalDateTime rangeEnd, boolean onlyAvailable, String sort, int from, int size) {
-        Optional<SortRequest> sortRequest = SortRequest.from(sort);
-        if (rangeStart != null && rangeEnd != null && rangeEnd.isBefore(rangeStart)) {
-            throw new ValidationException("Time end before start");
-        }
+    @Transactional(readOnly = true)
+    public List<EventShortDto> getEvents(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
+                                         LocalDateTime rangeEnd, Boolean onlyAvailable, String sort, int from, int size) {
+        Specification<Event> spec = Specification.where(null);
+        List<Category> categoriesList;
         Sort sortBy;
+        Optional<SortRequest> sortRequest = SortRequest.from(sort);
+
         sortBy = sortRequest.map(request -> request == SortRequest.VIEWS ? Sort.by(Sort.Direction.DESC, "views") :
-                Sort.by(Sort.Direction.DESC, "event_date")).orElseGet(() -> Sort.by(Sort.Direction.DESC, "id"));
+                Sort.by(Sort.Direction.DESC, "eventDate")).orElseGet(() -> Sort.by(Sort.Direction.DESC, "id"));
         Pageable page = PageRequest.of(from, size, sortBy);
         Page<Event> eventPage;
 
-        if ((text == null || text.isEmpty()) && (categories == null || categories.isEmpty())) {
-            if (rangeStart == null) {
-                eventPage = eventRepository.findAllByPaidAndEventDateAfter(paid, LocalDateTime.now(), page);
-            } else
-                eventPage = eventRepository.findAllByPaidAndEventDateBetween(paid, rangeStart, rangeEnd, page);
-        } else if (rangeStart == null) {
-            eventPage = eventRepository.
-                    findAllByStateAndAnnotationContainingIgnoreCaseAndCategoryIdInAndPaidAndEventDateAfterAndAvailable(
-                            State.PUBLISHED, text, categories, paid, LocalDateTime.now(), onlyAvailable, page);
-        } else {
-            eventPage = eventRepository
-                    .findAllByStateAndAnnotationContainingIgnoreCaseAndCategoryIdInAndPaidAndEventDateBetweenAndAvailable(
-                            State.PUBLISHED, text, categories, paid, rangeStart, rangeEnd, onlyAvailable, page);
+        if (text != null && !text.isEmpty()) {
+            spec = spec.and(EventSpecifications.byAnnotation(text));
+        }
+        if (categories != null && !categories.isEmpty()) {
+            categoriesList = categories.stream().map(category -> categoryRepository.findById(category)
+                    .orElseThrow(() -> new NotFoundException("Category not found"))).collect(Collectors.toList());
+            spec = spec.and(EventSpecifications.byCategoryIdIn(categoriesList));
+        }
+        if (paid != null) {
+            spec = spec.and(EventSpecifications.byPaid(paid));
+        }
+        if (onlyAvailable != null && onlyAvailable) {
+            spec = spec.and(EventSpecifications.byAvailable(true));
         }
 
+        eventPage = eventRepository.findAll(spec, page);
         List<Event> eventList = MapperPageToList.mapPageToList(eventPage, from, size);
+        eventList = checkIsAvailable(eventList);
+        if (onlyAvailable != null) {
+            eventList = checkIsAvailable(eventList);
+        }
         if (!eventList.isEmpty()) {
             sendHits(eventList);
             Map<Long,Long>  eventViews = getViews(eventList,rangeStart,rangeEnd);
@@ -80,10 +92,12 @@ public class PublicServiceImpl implements PublicService {
     }
 
     @Override
-    public EventShortDto getEvent(long eventId) {
+    @Transactional(readOnly = true)
+    public EventFullDto getEvent(long eventId) {
         Event event = eventRepository.findByIdAndState(eventId,State.PUBLISHED).orElseThrow(() -> new NotFoundException(String.
                 format("Event with id: %d not found", eventId)));
         List<Event> eventList = new ArrayList<>(List.of(event));
+        eventList = checkIsAvailable(eventList);
         sendHits(eventList);
         Map<Long,Long>  eventViews = getViews(eventList,event.getCreatedOn(),event.getEventDate());
         for (Event e : eventList) {
@@ -91,7 +105,17 @@ public class PublicServiceImpl implements PublicService {
                 e.setViews(eventViews.get(eventId));
             }
         }
-        return EventMapper.INSTANCE.toEventShortDto(event);
+        return EventMapper.INSTANCE.toEventFullDto(event);
+    }
+
+    private static List<Event> checkIsAvailable(List<Event> eventList) {
+        return eventList.stream()
+                .peek(event -> {
+                    if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+                        event.setAvailable(false);
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
     private void sendHits(List<Event> eventList) {
@@ -110,8 +134,11 @@ public class PublicServiceImpl implements PublicService {
             uris.add("/events/" + event.getId());
         }
         log.info("Getting views for events: {}", uris);
-
-        List<ViewStats> viewStatsList = statssClient.get(rangeStart, rangeEnd, uris, false);
+        if (rangeStart == null || rangeEnd == null) {
+            rangeStart=LocalDateTime.now().minusMinutes(1);
+            rangeEnd=LocalDateTime.now().plusYears(1);
+        }
+        List<ViewStats> viewStatsList = statssClient.get(rangeStart, rangeEnd, uris, true);
 
         Map<Long, Long> eventViews = new HashMap<>();
         for (ViewStats viewStats : viewStatsList) {

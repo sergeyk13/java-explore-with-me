@@ -13,7 +13,6 @@ import ru.practicum.event.model.State;
 public class UpdateEventUserRequest {
     private String annotation;
     private Category category;
-    private Long confirmedRequests;
     private String description;
     private String eventDate;
     private Location location;

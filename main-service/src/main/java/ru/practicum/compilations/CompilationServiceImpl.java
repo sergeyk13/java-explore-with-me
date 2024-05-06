@@ -19,6 +19,7 @@ import ru.practicum.event.mapper.EventMapper;
 import ru.practicum.event.model.Event;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.util.MapperPageToList;
+import ru.practicum.util.ValidationUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +69,7 @@ public class CompilationServiceImpl implements CompilationService {
             log.info("Updated events: {} for compilation: {}", updateCompilationRequest.getEvents(), compId);
             events = setCompByEventList(updateCompilationRequest.getEvents().get(), compilation);
         }
+        ValidationUtil.checkValidation(compilation);
         return createCompilationDto(compilation, events);
     }
 

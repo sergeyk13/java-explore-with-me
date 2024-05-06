@@ -31,6 +31,7 @@ public interface EventMapper {
     EventFullDto toEventFullDto(@Valid Event event);
 
     @Mapping(source = "initiator", target = "initiator")
+    @Mapping(target = "eventDate", source = "eventDate", qualifiedByName = "mapDateToString")
     EventShortDto toEventShortDto(Event event);
 
     @Named("mapStringToDate")

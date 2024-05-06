@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.category.CategoryRepository;
 import ru.practicum.category.model.Category;
+import ru.practicum.error.model.ForbiddenException;
 import ru.practicum.error.model.NotFoundException;
 import ru.practicum.error.model.ValidationException;
 import ru.practicum.event.dto.EventFullDto;
@@ -18,13 +19,14 @@ import ru.practicum.event.dto.NewEventDto;
 import ru.practicum.event.dto.UpdateEventUserRequest;
 import ru.practicum.event.mapper.EventMapper;
 import ru.practicum.event.model.Event;
+import ru.practicum.event.model.Location;
 import ru.practicum.event.model.State;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.event.repository.LocationRepository;
 import ru.practicum.user.UserRepository;
 import ru.practicum.user.model.User;
 import ru.practicum.util.MapperPageToList;
-import ru.practicum.util.Validation;
+import ru.practicum.util.ValidationUtil;
 
 import javax.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
@@ -48,6 +50,7 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
         User user = checkUser(userId);
         Category category = checkCategory(newEventDto);
         Event event = EventMapper.INSTANCE.mapToEvent(newEventDto);
+        checkEventDate(event);
         event.setInitiator(user);
         event.setCategory(category);
         event.setState(State.PENDING);
@@ -58,6 +61,13 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
         event = eventRepository.save(event);
         log.info("Created new event: {}", event.getId());
         return EventMapper.INSTANCE.toEventFullDto(event);
+    }
+
+    private static void checkEventDate(Event event) {
+        if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+            throw new ValidationException(String.format("Field: eventDate. Error: должно содержать дату, " +
+                    "которая еще не наступила. Value: %s", event.getEventDate()));
+        }
     }
 
 
@@ -87,6 +97,9 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
     public EventFullDto updateEvent(long userId, long eventId, UpdateEventUserRequest updateEventUserRequest) {
         User user = checkUser(userId);
         Event event = checkEvent(eventId);
+         if (event.getState().equals(State.PUBLISHED)) {
+             throw new ForbiddenException("Only pending or canceled events can be changed");
+         }
         isIterator(user, event);
 
         if (updateEventUserRequest.getAnnotation() != null) {
@@ -95,17 +108,17 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
         if (updateEventUserRequest.getCategory() != null) {
             event.setCategory(updateEventUserRequest.getCategory());
         }
-        if (updateEventUserRequest.getConfirmedRequests() != null) {
-            event.setConfirmedRequests(updateEventUserRequest.getConfirmedRequests());
-        }
         if (updateEventUserRequest.getDescription() != null) {
             event.setDescription(updateEventUserRequest.getDescription());
         }
         if (updateEventUserRequest.getEventDate() != null) {
             setEventDate(event, updateEventUserRequest.getEventDate());
+            checkEventDate(event);
         }
         if (updateEventUserRequest.getLocation() != null) {
-            event.setLocation(updateEventUserRequest.getLocation());
+            Location location = locationRepository.save(updateEventUserRequest.getLocation());
+            log.info("Save location: {}", location);
+            event.setLocation(location);
         }
         if (updateEventUserRequest.getPaid() != null) {
             event.setPaid(updateEventUserRequest.getPaid());
@@ -122,10 +135,11 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
         if (updateEventUserRequest.getTitle() != null) {
             event.setTitle(updateEventUserRequest.getTitle());
         }
+        event.setState(State.PENDING);
 
         try {
             EventFullDto eventFullDto = EventMapper.INSTANCE.toEventFullDto(event);
-            Validation.checkValidation(eventFullDto);
+            ValidationUtil.checkValidation(eventFullDto);
             log.info("Updating event: {}", event.getId());
             return eventFullDto;
         } catch (ConstraintViolationException e) {
@@ -136,7 +150,11 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
 
     private void setEventDate(Event event, String date) {
         try {
-            event.setEventDate(LocalDateTime.parse(date, FORMATTER));
+            LocalDateTime dateTime = LocalDateTime.parse(date, FORMATTER);
+            if (dateTime.isBefore(LocalDateTime.now().plusHours(2))) {
+                throw new ValidationException("Event date must be after 2 hour from now");
+            }
+            event.setEventDate(dateTime);
         } catch (DateTimeParseException e) {
             log.error("Error parsing event date", e);
             throw new ValidationException("Unable to parse event date", e.getCause());

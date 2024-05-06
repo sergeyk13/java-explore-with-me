@@ -41,7 +41,7 @@ public class RequestServiceImpl implements RequestService {
         request.setCreated(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
         request.setEvent(event);
         request.setRequester(user);
-        if (!event.isRequestModeration()) {
+        if (!event.isRequestModeration() || event.getParticipantLimit() == 0) {
             request.setStatus(Status.CONFIRMED);
         } else request.setStatus(Status.PENDING);
         request = requestRepository.save(request);
@@ -78,9 +78,9 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional(readOnly = true)
     public List<ParticipationRequestDto> getEventRequests(long userId, long eventId) {
-        User user = checkUser(userId);
+        User initiator = checkUser(userId);
         Event event = checkEvent(eventId);
-        Request request = requestRepository.findByEventIdAndRequesterId(eventId, userId).orElseThrow(() -> {
+        Request request = requestRepository.findByEventId(eventId).orElseThrow(() -> {
             log.error("Request for user: {} and event: {} not found", userId, eventId);
             return new NotFoundException(String.format("Request for user: %d and event: %d not found", userId, eventId));
         });
@@ -95,7 +95,7 @@ public class RequestServiceImpl implements RequestService {
         User user = checkUser(userId);
         Event event = checkEvent(eventId);
         checkInitiator(userId, event);
-        List<Request> requestList = requestRepository.findAllByEvent(event);
+        List<Request> requestList = requestRepository.findAllByEventAndStatus(event, Status.PENDING);
         List<ParticipationRequestDto> confirmedRequests = new ArrayList<>();
         List<ParticipationRequestDto> rejectedRequests = new ArrayList<>();
 
@@ -104,6 +104,10 @@ public class RequestServiceImpl implements RequestService {
                 if (updateRequest.getStatus().equals(Status.CONFIRMED)) {
                     request.setStatus(updateRequest.getStatus());
                     event.setConfirmedRequests(event.getConfirmedRequests() + 1);
+
+                    if (event.getConfirmedRequests() == event.getParticipantLimit()) {
+                        event.setAvailable(false);
+                    }
                     confirmedRequests.add(RequestMapper.INSTANCE.toParticipationRequestDto(request));
                 } else if (updateRequest.getStatus().equals(Status.REJECTED)) {
                     request.setStatus(Status.REJECTED);
