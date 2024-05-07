@@ -20,7 +20,7 @@ public class Client {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private final RestTemplate restTemplate;
 
-    public Client(@Value("http://localhost:9090") String serverUrl, RestTemplateBuilder builder) {
+    public Client(@Value("${statistic.server.url}") String serverUrl, RestTemplateBuilder builder) {
 
         this.restTemplate = builder
                 .uriTemplateHandler(new DefaultUriBuilderFactory(serverUrl))
