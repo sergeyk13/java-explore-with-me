@@ -17,7 +17,7 @@ import java.util.List;
 
 @Component
 public class Client {
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     private final RestTemplate restTemplate;
 
     public Client(@Value("http://localhost:9090") String serverUrl, RestTemplateBuilder builder) {
@@ -33,8 +33,8 @@ public class Client {
     }
 
     public List<ViewStats> get(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
-        String startString = start.format(formatter);
-        String endString = end.format(formatter);
+        String startString = start.format(FORMATTER);
+        String endString = end.format(FORMATTER);
         UriComponentsBuilder builder = UriComponentsBuilder.fromPath("/stats")
                 .queryParam("start", startString)
                 .queryParam("end", endString)
