@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.category.CategoryRepository;
 import ru.practicum.category.model.Category;
-import ru.practicum.error.model.ForbiddenException;
+import ru.practicum.error.model.ConflictException;
 import ru.practicum.error.model.NotFoundException;
 import ru.practicum.error.model.ValidationException;
 import ru.practicum.event.dto.EventFullDto;
@@ -44,6 +44,13 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
     private final CategoryRepository categoryRepository;
     private final LocationRepository locationRepository;
 
+    private static void checkEventDate(Event event) {
+        if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+            throw new ValidationException(String.format("Field: eventDate. Error: должно содержать дату, " +
+                    "которая еще не наступила. Value: %s", event.getEventDate()));
+        }
+    }
+
     @Override
     @Transactional
     public EventFullDto createEvent(long userId, NewEventDto newEventDto) {
@@ -62,14 +69,6 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
         log.info("Created new event: {}", event.getId());
         return EventMapper.INSTANCE.toEventFullDto(event);
     }
-
-    private static void checkEventDate(Event event) {
-        if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new ValidationException(String.format("Field: eventDate. Error: должно содержать дату, " +
-                    "которая еще не наступила. Value: %s", event.getEventDate()));
-        }
-    }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -97,45 +96,62 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
     public EventFullDto updateEvent(long userId, long eventId, UpdateEventUserRequest updateEventUserRequest) {
         User user = checkUser(userId);
         Event event = checkEvent(eventId);
-         if (event.getState().equals(State.PUBLISHED)) {
-             throw new ForbiddenException("Only pending or canceled events can be changed");
-         }
+        boolean isCanceled = true;
+        if (event.getState().equals(State.PUBLISHED)) {
+            throw new ConflictException("Only pending or canceled events can be changed");
+        }
         isIterator(user, event);
 
         if (updateEventUserRequest.getAnnotation() != null) {
             event.setAnnotation(updateEventUserRequest.getAnnotation());
+            isCanceled = false;
         }
         if (updateEventUserRequest.getCategory() != null) {
             event.setCategory(updateEventUserRequest.getCategory());
+            isCanceled = false;
         }
         if (updateEventUserRequest.getDescription() != null) {
             event.setDescription(updateEventUserRequest.getDescription());
+            isCanceled = false;
         }
         if (updateEventUserRequest.getEventDate() != null) {
             setEventDate(event, updateEventUserRequest.getEventDate());
             checkEventDate(event);
+            isCanceled = false;
         }
         if (updateEventUserRequest.getLocation() != null) {
             Location location = locationRepository.save(updateEventUserRequest.getLocation());
             log.info("Save location: {}", location);
             event.setLocation(location);
+            isCanceled = false;
         }
         if (updateEventUserRequest.getPaid() != null) {
             event.setPaid(updateEventUserRequest.getPaid());
+            isCanceled = false;
         }
         if (updateEventUserRequest.getParticipantLimit() != null) {
             event.setParticipantLimit(updateEventUserRequest.getParticipantLimit());
+            isCanceled = false;
         }
         if (updateEventUserRequest.getRequestModeration() != null) {
             event.setRequestModeration(updateEventUserRequest.getRequestModeration());
+            isCanceled = false;
         }
         if (updateEventUserRequest.getState() != null) {
             event.setState(updateEventUserRequest.getState());
+            isCanceled = false;
         }
         if (updateEventUserRequest.getTitle() != null) {
             event.setTitle(updateEventUserRequest.getTitle());
+            isCanceled = false;
         }
-        event.setState(State.PENDING);
+        if (isCanceled) {
+            if (event.getState().equals(State.CANCELED)) {
+                event.setState(State.PENDING);
+            } else {
+                event.setState(State.CANCELED);
+            }
+        } else event.setState(State.PENDING);
 
         try {
             EventFullDto eventFullDto = EventMapper.INSTANCE.toEventFullDto(event);

@@ -9,7 +9,6 @@ import ru.practicum.category.dto.CategoryDto;
 import ru.practicum.category.dto.CategoryShortDto;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.PositiveOrZero;
 import java.util.List;
 
@@ -30,7 +29,7 @@ public class CategoryController {
 
     @DeleteMapping("/admin/categories/{catId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteCategory(@PathVariable @NotBlank long catId) {
+    public void deleteCategory(@PathVariable long catId) {
         log.info("Delete category: {}", catId);
         categoryService.deleteCategory(catId);
     }
@@ -42,7 +41,7 @@ public class CategoryController {
     }
 
     @GetMapping("/categories/{catId}")
-    public CategoryDto getCategory(@PathVariable @NotBlank long catId) {
+    public CategoryDto getCategory(@PathVariable long catId) {
         log.info("Get category: {}", catId);
         return categoryService.getCategory(catId);
     }
@@ -52,7 +51,7 @@ public class CategoryController {
             @RequestParam(required = false, name = "from", defaultValue = "0") @PositiveOrZero int from,
             @RequestParam(required = false, name = "size", defaultValue = "10") @PositiveOrZero int size) {
         log.info("Get all categories");
-        return categoryService.getCategoties(from, size);
+        return categoryService.getCategories(from, size);
     }
 
 }

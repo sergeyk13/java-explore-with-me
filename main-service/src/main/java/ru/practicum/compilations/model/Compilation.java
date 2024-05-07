@@ -24,5 +24,5 @@ public class Compilation {
     @Size(min = 3, max = 50, message = "Длина name должна быть от {min} до {max} символов")
     private String title;
     @NotNull
-    private boolean  pinned;
+    private boolean pinned;
 }

@@ -37,13 +37,16 @@ public class CompilationServiceImpl implements CompilationService {
     @Transactional
     public CompilationDto createCompilation(NewCompilationDto newCompilationDto) {
         Compilation compilation = new Compilation();
+        List<Event> events = new ArrayList<>();
         compilation.setTitle(newCompilationDto.getTitle());
         compilation.setPinned(newCompilationDto.isPinned());
         compilation = compilationRepository.save(compilation);
         log.info("Created new compilation: {}", compilation);
 
         Compilation finalCompilation = compilation;
-        List<Event> events = setCompByEventList(newCompilationDto.getEvents(), finalCompilation);
+        if (newCompilationDto.getEvents() != null && !newCompilationDto.getEvents().isEmpty()) {
+            events = setCompByEventList(newCompilationDto.getEvents(), finalCompilation);
+        }
 
         return createCompilationDto(finalCompilation, events);
     }
@@ -52,6 +55,7 @@ public class CompilationServiceImpl implements CompilationService {
     @Transactional
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCompilation(long compId) {
+        Compilation compilation = findCompilation(compId);
         compilationRepository.deleteById(compId);
         log.info("Deleted compilation: {}", compId);
     }
@@ -61,13 +65,20 @@ public class CompilationServiceImpl implements CompilationService {
     public CompilationDto updateCompilation(long compId, UpdateCompilationRequest updateCompilationRequest) {
         Compilation compilation = findCompilation(compId);
         List<Event> events = List.of();
-        updateCompilationRequest.getTitle().ifPresent(compilation::setTitle);
-        updateCompilationRequest.getPinned().ifPresent(compilation::setPinned);
-        if (updateCompilationRequest.getEvents().isPresent()) {
-            List<Long> eventsId = eventRepository.findIdsByCompilation(compId);
+
+        if (updateCompilationRequest.getTitle() != null && !updateCompilationRequest.getTitle().isEmpty()) {
+            compilation.setTitle(updateCompilationRequest.getTitle());
+            log.info("Updated title: {}", updateCompilationRequest.getTitle());
+        }
+        if (updateCompilationRequest.getPinned() != null) {
+            compilation.setPinned(updateCompilationRequest.getPinned());
+            log.info("Updated pinned: {}", updateCompilationRequest.getPinned());
+        }
+        if (updateCompilationRequest.getEvents() != null) {
+            List<Long> eventsId = eventRepository.findIdsByCompilation(compilation);
             setCompByEventList(eventsId, null);
             log.info("Updated events: {} for compilation: {}", updateCompilationRequest.getEvents(), compId);
-            events = setCompByEventList(updateCompilationRequest.getEvents().get(), compilation);
+            events = setCompByEventList(updateCompilationRequest.getEvents(), compilation);
         }
         ValidationUtil.checkValidation(compilation);
         return createCompilationDto(compilation, events);
@@ -75,16 +86,19 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CompilationDto> getCompilations(boolean pinned, int from, int size) {
+    public List<CompilationDto> getCompilations(Boolean pinned, int from, int size) {
         List<CompilationDto> listCompilationsDto = new ArrayList<>();
         Sort sortById = Sort.by(Sort.Direction.DESC, "id");
         Pageable page = PageRequest.of(from, size, sortById);
-        Page<Compilation> compilations = compilationRepository.findAllByPinned(pinned, page);
+        Page<Compilation> compilations;
+        if (pinned != null) {
+            compilations = compilationRepository.findAllByPinned(pinned, page);
+        } else compilations = compilationRepository.findAll(page);
         log.info("Found {} compilations", compilations.getTotalElements());
         List<Compilation> compilationList = MapperPageToList.mapPageToList(compilations, from, size);
 
         compilationList.forEach(compilation -> {
-                    List<Event> events = eventRepository.findAllByCompilation(compilation.getId());
+                    List<Event> events = eventRepository.findAllByCompilation(compilation);
                     listCompilationsDto.add(createCompilationDto(compilation, events));
                 }
         );
@@ -95,7 +109,7 @@ public class CompilationServiceImpl implements CompilationService {
     @Transactional(readOnly = true)
     public CompilationDto getCompilation(long compId) {
         Compilation compilation = findCompilation(compId);
-        List<Event> events = eventRepository.findAllByCompilation(compId);
+        List<Event> events = eventRepository.findAllByCompilation(compilation);
         return createCompilationDto(compilation, events);
     }
 
@@ -117,9 +131,11 @@ public class CompilationServiceImpl implements CompilationService {
 
     private CompilationDto createCompilationDto(Compilation finalCompilation, List<Event> events) {
         CompilationDto compilationDto = CompilationMapper.INSTANCE.toDto(finalCompilation);
-        compilationDto.setEvents(events.stream()
-                .map(EventMapper.INSTANCE::toEventShortDto)
-                .collect(Collectors.toList()));
+        if (!events.isEmpty()) {
+            compilationDto.setEvents(events.stream()
+                    .map(EventMapper.INSTANCE::toEventShortDto)
+                    .collect(Collectors.toList()));
+        }
         log.info("Created new compilationDto: {}", compilationDto);
         return compilationDto;
     }

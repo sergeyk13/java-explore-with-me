@@ -85,15 +85,15 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public List<ApiError> handleDefaultValidation(final MethodArgumentNotValidException e){
-            List<ApiError> errors = new ArrayList<>();
-            FieldError fieldError = e.getBindingResult().getFieldError();
-            String fieldName = fieldError.getField();
-            String errorMessage = fieldName + ": " + fieldError.getDefaultMessage();
-            log.error(errorMessage);
-            ValidationException validationException = new ValidationException(errorMessage);
-            validationException.setCause(e.getCause());
-            errors.add(buildApiError(HttpStatus.BAD_REQUEST, validationException));
+    public List<ApiError> handleDefaultValidation(final MethodArgumentNotValidException e) {
+        List<ApiError> errors = new ArrayList<>();
+        FieldError fieldError = e.getBindingResult().getFieldError();
+        String fieldName = fieldError.getField();
+        String errorMessage = fieldName + ": " + fieldError.getDefaultMessage();
+        log.error(errorMessage);
+        ValidationException validationException = new ValidationException(errorMessage);
+        validationException.setCause(e.getCause());
+        errors.add(buildApiError(HttpStatus.BAD_REQUEST, validationException));
         return errors;
     }
 
@@ -116,7 +116,7 @@ public class ErrorHandler {
         return errors;
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(ConflictException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public List<ApiError> handleConflict(final ConflictException e) {
         List<ApiError> errors = new ArrayList<>();

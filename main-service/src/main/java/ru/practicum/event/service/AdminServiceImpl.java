@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.category.CategoryRepository;
 import ru.practicum.category.model.Category;
+import ru.practicum.error.model.ConflictException;
 import ru.practicum.error.model.NotFoundException;
 import ru.practicum.error.model.ValidationException;
 import ru.practicum.event.EventSpecifications;
@@ -43,6 +44,13 @@ public class AdminServiceImpl implements AdminService {
     private UserRepository userRepository;
     private CategoryRepository categoryRepository;
     private LocationRepository locationRepository;
+
+    private static void checkEventDate(Event event) {
+        if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+            throw new ValidationException(String.format("Field: eventDate. Error: должно содержать дату, " +
+                    "которая еще не наступила. Value: %s", event.getEventDate()));
+        }
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -94,7 +102,9 @@ public class AdminServiceImpl implements AdminService {
         Event event = eventRepository.findById(eventId).orElseThrow(() -> new ValidationException("Event not found"));
         EventFullDto eventFullDto;
 
-
+        if (event.getState().equals(State.PUBLISHED) || event.getState().equals(State.CANCELED)) {
+            throw new ConflictException("State is published");
+        }
         if (eventAdminRequest.getAnnotation() != null) {
             event.setAnnotation(eventAdminRequest.getAnnotation());
         }
@@ -162,12 +172,5 @@ public class AdminServiceImpl implements AdminService {
 
     private void checkState(List<String> states) {
         states.forEach(state -> State.from(state).orElseThrow(() -> new ValidationException("Invalid state")));
-    }
-
-    private static void checkEventDate(Event event) {
-        if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new ValidationException(String.format("Field: eventDate. Error: должно содержать дату, " +
-                    "которая еще не наступила. Value: %s", event.getEventDate()));
-        }
     }
 }

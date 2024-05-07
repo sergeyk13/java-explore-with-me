@@ -5,13 +5,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Optional;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class UpdateCompilationRequest {
-    private Optional<List<Long>> events;
-    private Optional<Boolean> pinned;
-    private Optional<String> title;
+    private List<Long> events;
+    private Boolean pinned;
+    private String title;
 }

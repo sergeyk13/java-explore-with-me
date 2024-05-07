@@ -9,7 +9,6 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
-import java.util.Optional;
 
 @Data
 @AllArgsConstructor
@@ -28,8 +27,8 @@ public class NewEventDto {
     private Location location;
     private boolean paid = false;
     @Min(0)
-    private long participantLimit= 0;
-    private boolean requestModeration =true;
+    private long participantLimit = 0;
+    private boolean requestModeration = true;
     @Size(min = 3, max = 120, message = "Длина title должна быть от {min} до {max} символов")
     private String title;
 }

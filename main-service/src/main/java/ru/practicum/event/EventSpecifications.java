@@ -35,7 +35,7 @@ public class EventSpecifications {
     }
 
     public static Specification<Event> byAnnotation(String searchText) {
-        return  (Root<Event> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) ->
+        return (Root<Event> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) ->
                 criteriaBuilder.like(criteriaBuilder.lower(root.get("annotation")), "%" + searchText.toLowerCase() + "%");
     }
 

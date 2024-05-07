@@ -31,24 +31,35 @@ public class RequestServiceImpl implements RequestService {
     private UserRepository userRepository;
     private EventRepository eventRepository;
 
+    private static void checkInitiator(long initiatorId, Event event) {
+        if (initiatorId != event.getInitiator().getId()) {
+            log.error("Request conflict requester is initiator");
+            throw new ConflictException("Request conflict requester is initiator");
+        }
+    }
+
     @Override
     @Transactional
     public ParticipationRequestDto createRequest(long userId, long eventId) {
         User user = checkUser(userId);
         Event event = checkEvent(eventId);
         checkConflictsConflict(event.getInitiator().getId(), event, user);
+        if (userId == event.getInitiator().getId()) {
+            log.error("Request conflict requester is initiator");
+            throw new ConflictException("Request conflict requester is initiator");
+        }
         Request request = new Request();
         request.setCreated(LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS));
         request.setEvent(event);
         request.setRequester(user);
         if (!event.isRequestModeration() || event.getParticipantLimit() == 0) {
             request.setStatus(Status.CONFIRMED);
+            event.setConfirmedRequests(event.getParticipantLimit() + 1);
         } else request.setStatus(Status.PENDING);
         request = requestRepository.save(request);
         log.info("Create request: {}", request);
         return RequestMapper.INSTANCE.toParticipationRequestDto(request);
     }
-
 
     @Override
     @Transactional(readOnly = true)
@@ -96,6 +107,9 @@ public class RequestServiceImpl implements RequestService {
         Event event = checkEvent(eventId);
         checkInitiator(userId, event);
         List<Request> requestList = requestRepository.findAllByEventAndStatus(event, Status.PENDING);
+        if (requestList.isEmpty()) {
+            throw new ConflictException("Request has been rejected or confirmed initiator");
+        }
         List<ParticipationRequestDto> confirmedRequests = new ArrayList<>();
         List<ParticipationRequestDto> rejectedRequests = new ArrayList<>();
 
@@ -103,6 +117,7 @@ public class RequestServiceImpl implements RequestService {
             if (updateRequest.getRequestIds().contains(request.getId())) {
                 if (updateRequest.getStatus().equals(Status.CONFIRMED)) {
                     request.setStatus(updateRequest.getStatus());
+                    checkConflictsConflict(event.getInitiator().getId(), event, user);
                     event.setConfirmedRequests(event.getConfirmedRequests() + 1);
 
                     if (event.getConfirmedRequests() == event.getParticipantLimit()) {
@@ -154,13 +169,6 @@ public class RequestServiceImpl implements RequestService {
             log.error("Request conflict participant limit: {} has been reached: {} ", event.getParticipantLimit(),
                     event.getConfirmedRequests());
             throw new ConflictException("Request conflict participant limit has been reached");
-        }
-    }
-
-    private static void checkInitiator(long initiatorId, Event event) {
-        if (initiatorId != event.getInitiator().getId()) {
-            log.error("Request conflict requester is initiator");
-            throw new ConflictException("Request conflict requester is initiator");
         }
     }
 }

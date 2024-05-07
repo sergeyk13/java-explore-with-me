@@ -15,6 +15,7 @@ import ru.practicum.ViewStats;
 import ru.practicum.category.CategoryRepository;
 import ru.practicum.category.model.Category;
 import ru.practicum.error.model.NotFoundException;
+import ru.practicum.error.model.ValidationException;
 import ru.practicum.event.EventSpecifications;
 import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.EventShortDto;
@@ -40,6 +41,16 @@ public class PublicServiceImpl implements PublicService {
     private final Client statssClient;
     private final CategoryRepository categoryRepository;
 
+    private static List<Event> checkIsAvailable(List<Event> eventList) {
+        return eventList.stream()
+                .peek(event -> {
+                    if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+                        event.setAvailable(false);
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<EventShortDto> getEvents(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
@@ -59,7 +70,7 @@ public class PublicServiceImpl implements PublicService {
         }
         if (categories != null && !categories.isEmpty()) {
             categoriesList = categories.stream().map(category -> categoryRepository.findById(category)
-                    .orElseThrow(() -> new NotFoundException("Category not found"))).collect(Collectors.toList());
+                    .orElseThrow(() -> new ValidationException("Category not found"))).collect(Collectors.toList());
             spec = spec.and(EventSpecifications.byCategoryIdIn(categoriesList));
         }
         if (paid != null) {
@@ -77,7 +88,7 @@ public class PublicServiceImpl implements PublicService {
         }
         if (!eventList.isEmpty()) {
             sendHits(eventList);
-            Map<Long,Long>  eventViews = getViews(eventList,rangeStart,rangeEnd);
+            Map<Long, Long> eventViews = getViews(eventList, rangeStart, rangeEnd);
             for (Event event : eventList) {
                 Long eventId = event.getId();
                 if (eventViews.containsKey(eventId)) {
@@ -94,28 +105,18 @@ public class PublicServiceImpl implements PublicService {
     @Override
     @Transactional(readOnly = true)
     public EventFullDto getEvent(long eventId) {
-        Event event = eventRepository.findByIdAndState(eventId,State.PUBLISHED).orElseThrow(() -> new NotFoundException(String.
-                format("Event with id: %d not found", eventId)));
+        Event event = eventRepository.findByIdAndState(eventId, State.PUBLISHED).orElseThrow(() ->
+                new NotFoundException(String.format("Event with id: %d not found", eventId)));
         List<Event> eventList = new ArrayList<>(List.of(event));
         eventList = checkIsAvailable(eventList);
         sendHits(eventList);
-        Map<Long,Long>  eventViews = getViews(eventList,event.getCreatedOn(),event.getEventDate());
+        Map<Long, Long> eventViews = getViews(eventList, event.getCreatedOn(), event.getEventDate());
         for (Event e : eventList) {
             if (eventViews.containsKey(eventId)) {
                 e.setViews(eventViews.get(eventId));
             }
         }
         return EventMapper.INSTANCE.toEventFullDto(event);
-    }
-
-    private static List<Event> checkIsAvailable(List<Event> eventList) {
-        return eventList.stream()
-                .peek(event -> {
-                    if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-                        event.setAvailable(false);
-                    }
-                })
-                .collect(Collectors.toList());
     }
 
     private void sendHits(List<Event> eventList) {
@@ -135,8 +136,8 @@ public class PublicServiceImpl implements PublicService {
         }
         log.info("Getting views for events: {}", uris);
         if (rangeStart == null || rangeEnd == null) {
-            rangeStart=LocalDateTime.now().minusMinutes(1);
-            rangeEnd=LocalDateTime.now().plusYears(1);
+            rangeStart = LocalDateTime.now().minusMinutes(1);
+            rangeEnd = LocalDateTime.now().plusYears(1);
         }
         List<ViewStats> viewStatsList = statssClient.get(rangeStart, rangeEnd, uris, true);
 
