@@ -17,7 +17,7 @@ import java.util.List;
 
 @Component
 public class Client {
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private final RestTemplate restTemplate;
 
     public Client(@Value("${statistic.server.url}") String serverUrl, RestTemplateBuilder builder) {
@@ -46,7 +46,7 @@ public class Client {
             }
         }
 
-        String urlWithParams = builder.toUriString();
+        String urlWithParams = builder.toUriString().replaceAll("%20", " ");
         ResponseEntity<List<ViewStats>> response = restTemplate.exchange(
                 urlWithParams,
                 HttpMethod.GET,
@@ -56,5 +56,4 @@ public class Client {
         );
         return response.getBody();
     }
-
 }

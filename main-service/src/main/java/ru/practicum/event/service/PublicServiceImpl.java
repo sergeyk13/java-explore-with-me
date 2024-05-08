@@ -27,6 +27,7 @@ import ru.practicum.event.repository.EventRepository;
 import ru.practicum.util.MapperPageToList;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,18 +42,8 @@ public class PublicServiceImpl implements PublicService {
     private final Client statssClient;
     private final CategoryRepository categoryRepository;
 
-    private static List<Event> checkIsAvailable(List<Event> eventList) {
-        return eventList.stream()
-                .peek(event -> {
-                    if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-                        event.setAvailable(false);
-                    }
-                })
-                .collect(Collectors.toList());
-    }
-
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public List<EventShortDto> getEvents(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
                                          LocalDateTime rangeEnd, Boolean onlyAvailable, String sort, int from, int size) {
         Specification<Event> spec = Specification.where(null);
@@ -93,6 +84,8 @@ public class PublicServiceImpl implements PublicService {
                 Long eventId = event.getId();
                 if (eventViews.containsKey(eventId)) {
                     event.setViews(eventViews.get(eventId));
+                    eventRepository.save(event);
+                    log.info("Save views: {} for event with id: {}",event.getViews(), event.getId());
                 }
             }
         }
@@ -103,7 +96,7 @@ public class PublicServiceImpl implements PublicService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional
     public EventFullDto getEvent(long eventId) {
         Event event = eventRepository.findByIdAndState(eventId, State.PUBLISHED).orElseThrow(() ->
                 new NotFoundException(String.format("Event with id: %d not found", eventId)));
@@ -114,6 +107,8 @@ public class PublicServiceImpl implements PublicService {
         for (Event e : eventList) {
             if (eventViews.containsKey(eventId)) {
                 e.setViews(eventViews.get(eventId));
+                eventRepository.save(e);
+                log.info("Save views: {} for event with id: {}",e.getViews(), e.getId());
             }
         }
         return EventMapper.INSTANCE.toEventFullDto(event);
@@ -122,7 +117,7 @@ public class PublicServiceImpl implements PublicService {
     private void sendHits(List<Event> eventList) {
         for (Event event : eventList) {
             String uri = "/events/" + event.getId();
-            LocalDateTime time = LocalDateTime.now();
+            LocalDateTime time = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
             log.info("Sending hit for event: {} to stats server", event.getId());
             statssClient.post(new StatisticDto(APP_NAME, uri, IP, time.format(FORMATTER)));
         }
@@ -136,8 +131,8 @@ public class PublicServiceImpl implements PublicService {
         }
         log.info("Getting views for events: {}", uris);
         if (rangeStart == null || rangeEnd == null) {
-            rangeStart = LocalDateTime.now().minusMinutes(1);
-            rangeEnd = LocalDateTime.now().plusYears(1);
+            rangeStart = LocalDateTime.now().minusMinutes(1).truncatedTo(ChronoUnit.SECONDS);
+            rangeEnd = rangeStart.plusYears(1);
         }
         List<ViewStats> viewStatsList = statssClient.get(rangeStart, rangeEnd, uris, true);
 
@@ -149,5 +144,15 @@ public class PublicServiceImpl implements PublicService {
             eventViews.put(key, value);
         }
         return eventViews;
+    }
+
+    private static List<Event> checkIsAvailable(List<Event> eventList) {
+        return eventList.stream()
+                .peek(event -> {
+                    if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+                        event.setAvailable(false);
+                    }
+                })
+                .collect(Collectors.toList());
     }
 }
