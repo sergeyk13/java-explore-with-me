@@ -8,12 +8,19 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class StatsSpecification {
     public static Specification<Statistic> byUris(Collection<String> uris) {
-        return (Root<Statistic> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) ->
-                root.get("uri").in(uris);
+        return (Root<Statistic> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            for (String uri : uris) {
+                predicates.add(criteriaBuilder.like(root.get("uri"), "%" + uri + "%"));
+            }
+            return criteriaBuilder.or(predicates.toArray(new Predicate[0]));
+        };
     }
 
     public static Specification<Statistic> uniqueIps() {

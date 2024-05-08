@@ -46,8 +46,10 @@ public class StatsServiceImpl implements StatsService {
 
         List<Statistic> statistics = statsRepository.findAll(spec);
         Map<String, Integer> uriToHitsMap = new HashMap<>();
+            List<String> urisFromStatistics = new ArrayList<>();
+            statistics.forEach(statistic -> urisFromStatistics.add(statistic.getUri()));
 
-        for (String uri : uris) {
+        for (String uri : urisFromStatistics) {
             List<String> uniqueIps = statsRepository.findUniqueIpsBetween(uri, start, end);
             int hits = unique ? uniqueIps.size() : statsRepository.countByUriAndTimestampBetween(uri, start, end);
             uriToHitsMap.put(uri, hits);
