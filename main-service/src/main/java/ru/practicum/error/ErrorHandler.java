@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import ru.practicum.error.model.ConflictException;
-import ru.practicum.error.model.ForbiddenException;
 import ru.practicum.error.model.NotFoundException;
 import ru.practicum.error.model.ValidationException;
 
@@ -31,9 +30,10 @@ import static ru.practicum.util.Constant.FORMATTER;
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler
+    @ExceptionHandler({MissingServletRequestParameterException.class, ValidationException.class,
+            ConversionFailedException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public List<ApiError> handleValidationException(final ValidationException e) {
+    public List<ApiError> handleValidationException(Exception e) {
         List<ApiError> errors = new ArrayList<>();
         log.error(e.getMessage());
         errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
@@ -42,34 +42,25 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.FORBIDDEN)
-    public List<ApiError> handleForbiddenException(final ForbiddenException e) {
+    public List<ApiError> handleForbiddenException(Exception e) {
         List<ApiError> errors = new ArrayList<>();
         log.error(e.getMessage());
-        errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
+        errors.add(buildApiError(HttpStatus.FORBIDDEN, e));
         return errors;
     }
 
-    @ExceptionHandler
+    @ExceptionHandler({NotFoundException.class, EntityNotFoundException.class,})
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public List<ApiError> handleNotFoundException(final NotFoundException e) {
+    public List<ApiError> handleNotFoundException(Exception e) {
         List<ApiError> errors = new ArrayList<>();
         log.error(e.getMessage());
-        errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
+        errors.add(buildApiError(HttpStatus.NOT_FOUND, e));
         return errors;
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public List<ApiError> handleMissingServletRequestParameterException(final MissingServletRequestParameterException e) {
-        List<ApiError> errors = new ArrayList<>();
-        log.error(e.getMessage());
-        errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
-        return errors;
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public List<ApiError> handleConstraintViolationException(final javax.validation.ConstraintViolationException e) {
+    public List<ApiError> handleConstraintViolationException(javax.validation.ConstraintViolationException e) {
         List<ApiError> errors = new ArrayList<>();
         String errorMessage = e.getMessage();
         Set<ConstraintViolation<?>> violations = e.getConstraintViolations();
@@ -85,7 +76,7 @@ public class ErrorHandler {
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public List<ApiError> handleDefaultValidation(final MethodArgumentNotValidException e) {
+    public List<ApiError> handleDefaultValidation(MethodArgumentNotValidException e) {
         List<ApiError> errors = new ArrayList<>();
         FieldError fieldError = e.getBindingResult().getFieldError();
         String fieldName = fieldError.getField();
@@ -97,67 +88,22 @@ public class ErrorHandler {
         return errors;
     }
 
-
-    @ExceptionHandler(ConversionFailedException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    protected List<ApiError> handleConversionFailed(ConversionFailedException e) {
-        List<ApiError> errors = new ArrayList<>();
-        log.error(e.getMessage());
-        errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
-        return errors;
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public List<ApiError> handleNotFoundEntity(final EntityNotFoundException e) {
-        List<ApiError> errors = new ArrayList<>();
-        log.error(cleanErrorMessage(e.getMessage()));
-        errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
-        return errors;
-    }
-
-    @ExceptionHandler(ConflictException.class)
+    @ExceptionHandler({ConflictException.class, ConstraintViolationException.class, AccessDeniedException.class,
+            DataIntegrityViolationException.class, DataAccessException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
-    public List<ApiError> handleConflict(final ConflictException e) {
+    public List<ApiError> handleConflict(final Exception e) {
         List<ApiError> errors = new ArrayList<>();
         log.error(e.getMessage(), e);
-        errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
-        return errors;
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public List<ApiError> handleConstraintViolationException(final ConstraintViolationException e) {
-        List<ApiError> errors = new ArrayList<>();
-        log.error(e.getMessage());
-        errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
-        return errors;
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public List<ApiError> handleConflict(final AccessDeniedException e) {
-        List<ApiError> errors = new ArrayList<>();
-        log.error(e.getMessage(), e);
-        errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
+        errors.add(buildApiError(HttpStatus.CONFLICT, e));
         return errors;
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public List<ApiError> handleNullPointer(final NullPointerException e) {
+    public List<ApiError> handleNullPointer(NullPointerException e) {
         List<ApiError> errors = new ArrayList<>();
         log.error(e.getMessage());
-        errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
-        return errors;
-    }
-
-    @ExceptionHandler({DataIntegrityViolationException.class, DataAccessException.class})
-    @ResponseStatus(HttpStatus.CONFLICT)
-    public List<ApiError> handleForeignKeyViolation(DataIntegrityViolationException e) {
-        List<ApiError> errors = new ArrayList<>();
-        log.error(cleanErrorMessage(e.getMessage()));
-        errors.add(buildApiError(HttpStatus.BAD_REQUEST, e));
+        errors.add(buildApiError(HttpStatus.INTERNAL_SERVER_ERROR, e));
         return errors;
     }
 

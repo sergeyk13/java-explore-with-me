@@ -29,8 +29,8 @@ public class UserController {
 
     @GetMapping
     public List<UserDto> getUsers(@RequestParam(required = false) List<Long> ids,
-                                  @RequestParam(required = false, name = "from", defaultValue = "0") @PositiveOrZero int from,
-                                  @RequestParam(required = false, name = "size", defaultValue = "10") @PositiveOrZero int size) {
+                                  @RequestParam(name = "from", defaultValue = "0") @PositiveOrZero int from,
+                                  @RequestParam(name = "size", defaultValue = "10") @PositiveOrZero int size) {
         log.info("Getting users: {} , page from: {}, size: {}", ids, from, size);
         return userService.getUsers(ids, from, size);
     }

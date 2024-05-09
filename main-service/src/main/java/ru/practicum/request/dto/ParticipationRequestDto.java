@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.request.model.Status;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Data
@@ -14,7 +15,7 @@ public class ParticipationRequestDto {
     private long id;
     @NotNull
     private long event;
-    @NotNull
+    @NotBlank
     private String created;
     @NotNull
     private long requester;

@@ -13,6 +13,7 @@ public class UserDto {
     @Min(1)
     private long id;
     @Email
+    @NotEmpty
     private String email;
     @NotBlank
     @Size(min = 6)

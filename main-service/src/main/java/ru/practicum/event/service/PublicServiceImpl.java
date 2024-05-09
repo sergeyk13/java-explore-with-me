@@ -42,6 +42,16 @@ public class PublicServiceImpl implements PublicService {
     private final Client statssClient;
     private final CategoryRepository categoryRepository;
 
+    private static List<Event> checkIsAvailable(List<Event> eventList) {
+        return eventList.stream()
+                .peek(event -> {
+                    if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+                        event.setAvailable(false);
+                    }
+                })
+                .collect(Collectors.toList());
+    }
+
     @Override
     @Transactional
     public List<EventShortDto> getEvents(String text, List<Long> categories, Boolean paid, LocalDateTime rangeStart,
@@ -85,7 +95,7 @@ public class PublicServiceImpl implements PublicService {
                 if (eventViews.containsKey(eventId)) {
                     event.setViews(eventViews.get(eventId));
                     eventRepository.save(event);
-                    log.info("Save views: {} for event with id: {}",event.getViews(), event.getId());
+                    log.info("Save views: {} for event with id: {}", event.getViews(), event.getId());
                 }
             }
         }
@@ -108,7 +118,7 @@ public class PublicServiceImpl implements PublicService {
             if (eventViews.containsKey(eventId)) {
                 e.setViews(eventViews.get(eventId));
                 eventRepository.save(e);
-                log.info("Save views: {} for event with id: {}",e.getViews(), e.getId());
+                log.info("Save views: {} for event with id: {}", e.getViews(), e.getId());
             }
         }
         return EventMapper.INSTANCE.toEventFullDto(event);
@@ -144,15 +154,5 @@ public class PublicServiceImpl implements PublicService {
             eventViews.put(key, value);
         }
         return eventViews;
-    }
-
-    private static List<Event> checkIsAvailable(List<Event> eventList) {
-        return eventList.stream()
-                .peek(event -> {
-                    if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-                        event.setAvailable(false);
-                    }
-                })
-                .collect(Collectors.toList());
     }
 }

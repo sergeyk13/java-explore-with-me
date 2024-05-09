@@ -27,9 +27,9 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Slf4j
 public class RequestServiceImpl implements RequestService {
-    private RequestRepository requestRepository;
-    private UserRepository userRepository;
-    private EventRepository eventRepository;
+    private final RequestRepository requestRepository;
+    private final UserRepository userRepository;
+    private final EventRepository eventRepository;
 
     private static void checkInitiator(long initiatorId, Event event) {
         if (initiatorId != event.getInitiator().getId()) {

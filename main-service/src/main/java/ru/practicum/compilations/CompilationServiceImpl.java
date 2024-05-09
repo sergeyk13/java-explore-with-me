@@ -6,10 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import ru.practicum.compilations.dto.CompilationDto;
 import ru.practicum.compilations.dto.NewCompilationDto;
 import ru.practicum.compilations.dto.UpdateCompilationRequest;
@@ -29,9 +27,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Slf4j
 public class CompilationServiceImpl implements CompilationService {
-    private CompilationRepository compilationRepository;
-    private EventRepository eventRepository;
-
+    private final CompilationRepository compilationRepository;
+    private final EventRepository eventRepository;
 
     @Override
     @Transactional
@@ -53,7 +50,6 @@ public class CompilationServiceImpl implements CompilationService {
 
     @Override
     @Transactional
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCompilation(long compId) {
         Compilation compilation = findCompilation(compId);
         compilationRepository.deleteById(compId);
@@ -66,7 +62,7 @@ public class CompilationServiceImpl implements CompilationService {
         Compilation compilation = findCompilation(compId);
         List<Event> events = List.of();
 
-        if (updateCompilationRequest.getTitle() != null && !updateCompilationRequest.getTitle().isEmpty()) {
+        if (updateCompilationRequest.getTitle() != null && !updateCompilationRequest.getTitle().isBlank()) {
             compilation.setTitle(updateCompilationRequest.getTitle());
             log.info("Updated title: {}", updateCompilationRequest.getTitle());
         }

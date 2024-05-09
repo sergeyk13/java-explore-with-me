@@ -40,10 +40,10 @@ import static ru.practicum.util.Constant.FORMATTER;
 @AllArgsConstructor
 @Slf4j
 public class AdminServiceImpl implements AdminService {
-    private EventRepository eventRepository;
-    private UserRepository userRepository;
-    private CategoryRepository categoryRepository;
-    private LocationRepository locationRepository;
+    private final EventRepository eventRepository;
+    private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
+    private final LocationRepository locationRepository;
 
     private static void checkEventDate(Event event) {
         if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
@@ -105,7 +105,7 @@ public class AdminServiceImpl implements AdminService {
         if (event.getState().equals(State.PUBLISHED) || event.getState().equals(State.CANCELED)) {
             throw new ConflictException("State is published");
         }
-        if (eventAdminRequest.getAnnotation() != null) {
+        if (eventAdminRequest.getAnnotation() != null && !eventAdminRequest.getAnnotation().isBlank()) {
             event.setAnnotation(eventAdminRequest.getAnnotation());
         }
         if (eventAdminRequest.getCategory() != null) {
@@ -116,7 +116,7 @@ public class AdminServiceImpl implements AdminService {
             });
             event.setCategory(category);
         }
-        if (eventAdminRequest.getDescription() != null) {
+        if (eventAdminRequest.getDescription() != null && !eventAdminRequest.getDescription().isBlank()) {
             event.setDescription(eventAdminRequest.getDescription());
         }
         try {

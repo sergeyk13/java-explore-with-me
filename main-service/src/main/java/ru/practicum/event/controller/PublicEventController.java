@@ -28,9 +28,9 @@ public class PublicEventController {
                                          @RequestParam(required = false) @DateTimeFormat(pattern = DATE_FORMAT) LocalDateTime rangeStart,
                                          @RequestParam(required = false) @DateTimeFormat(pattern = DATE_FORMAT) LocalDateTime rangeEnd,
                                          @RequestParam(required = false) Boolean onlyAvailable,
-                                         @RequestParam(required = false, defaultValue = "") String sort,
-                                         @RequestParam(required = false, name = "from", defaultValue = "0") @PositiveOrZero int from,
-                                         @RequestParam(required = false, name = "size", defaultValue = "10") @PositiveOrZero int size) {
+                                         @RequestParam(defaultValue = "") String sort,
+                                         @RequestParam(name = "from", defaultValue = "0") @PositiveOrZero int from,
+                                         @RequestParam(name = "size", defaultValue = "10") @PositiveOrZero int size) {
         log.info("getEvents called");
         return publicService.getEvents(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
     }

@@ -110,7 +110,7 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
             event.setCategory(updateEventUserRequest.getCategory());
             isCanceled = false;
         }
-        if (updateEventUserRequest.getDescription() != null) {
+        if (updateEventUserRequest.getDescription() != null && !updateEventUserRequest.getDescription().isBlank()) {
             event.setDescription(updateEventUserRequest.getDescription());
             isCanceled = false;
         }
@@ -141,7 +141,7 @@ public class PrivatePrivateEventServiceImpl implements PrivateEventService {
             event.setState(updateEventUserRequest.getState());
             isCanceled = false;
         }
-        if (updateEventUserRequest.getTitle() != null) {
+        if (updateEventUserRequest.getTitle() != null && !updateEventUserRequest.getTitle().isBlank()) {
             event.setTitle(updateEventUserRequest.getTitle());
             isCanceled = false;
         }
