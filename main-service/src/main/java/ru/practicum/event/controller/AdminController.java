@@ -2,6 +2,7 @@ package ru.practicum.event.controller;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.UpdateEventAdminRequest;
@@ -18,6 +19,7 @@ public class AdminController {
     private final AdminService adminService;
 
     @GetMapping
+    @ResponseStatus(HttpStatus.OK)
     public List<EventFullDto> getEvents(@RequestParam(required = false) List<Long> users,
                                         @RequestParam(required = false) List<String> states,
                                         @RequestParam(required = false) List<Long> categories,
@@ -30,6 +32,7 @@ public class AdminController {
     }
 
     @PatchMapping("/{eventId}")
+    @ResponseStatus(HttpStatus.OK)
     public EventFullDto updateEvent(@PathVariable("eventId") long eventId,
                                     @RequestBody UpdateEventAdminRequest eventAdminRequest) {
         log.info("Update event: {}", eventAdminRequest);

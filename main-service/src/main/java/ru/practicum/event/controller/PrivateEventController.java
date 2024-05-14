@@ -32,6 +32,7 @@ public class PrivateEventController {
     }
 
     @GetMapping("{userId}/events")
+    @ResponseStatus(HttpStatus.OK)
     public List<EventShortDto> getEvents(@PathVariable("userId") long userId,
                                          @RequestParam(name = "from", defaultValue = "0") @PositiveOrZero int from,
                                          @RequestParam(name = "size", defaultValue = "10") @PositiveOrZero int size) {
@@ -40,12 +41,14 @@ public class PrivateEventController {
     }
 
     @GetMapping("{userId}/events/{eventId}")
+    @ResponseStatus(HttpStatus.OK)
     public EventFullDto findEvent(@PathVariable("userId") long userId, @PathVariable("eventId") long eventId) {
         log.info("Get event by id from user {} with event {}", userId, eventId);
         return privateEventService.findEvent(userId, eventId);
     }
 
     @PatchMapping("{userId}/events/{eventId}")
+    @ResponseStatus(HttpStatus.OK)
     public EventFullDto updateEvent(@PathVariable("userId") long userId,
                                     @PathVariable("eventId") long eventId,
                                     @RequestBody UpdateEventUserRequest updateEventUserRequest) {

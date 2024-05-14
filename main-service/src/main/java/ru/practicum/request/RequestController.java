@@ -29,24 +29,28 @@ public class RequestController {
     }
 
     @GetMapping("/{userId}/requests")
+    @ResponseStatus(HttpStatus.OK)
     public List<ParticipationRequestDto> getRequest(@PathVariable("userId") long userId) {
         log.info("Request get request for user {}", userId);
         return requestService.getRequest(userId);
     }
 
     @PatchMapping("/{userId}/requests/{requestId}/cancel")
+    @ResponseStatus(HttpStatus.OK)
     public ParticipationRequestDto cancelRequest(@PathVariable long requestId, @PathVariable("userId") long userId) {
         log.info("Request cancel request for user {} with request {}", userId, requestId);
         return requestService.cancelRequest(requestId, userId);
     }
 
     @GetMapping("/{userId}/events/{eventId}/requests")
+    @ResponseStatus(HttpStatus.OK)
     public List<ParticipationRequestDto> getEventRequests(@PathVariable long userId, @PathVariable("eventId") long eventId) {
         log.info("Request get List requests for user {} with event {}", userId, eventId);
         return requestService.getEventRequests(userId, eventId);
     }
 
     @PatchMapping("/{userId}/events/{eventId}/requests")
+    @ResponseStatus(HttpStatus.OK)
     public EventRequestStatusUpdateResult patchStatusRequests(@PathVariable long userId, @PathVariable long eventId,
                                                               @RequestBody @Valid EventRequestStatusUpdateRequest updateRequest) {
         log.info("Request update status for user {} with event {}", userId, eventId);

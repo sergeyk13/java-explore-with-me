@@ -12,28 +12,29 @@ import ru.practicum.category.dto.CategoryShortDto;
 import javax.validation.Valid;
 
 @RestController
-@RequestMapping
+@RequestMapping("/admin/categories")
 @AllArgsConstructor
 @Slf4j
 @Validated
 public class AdminCategoryController {
     private final CategoryService categoryService;
 
-    @PostMapping("/admin/categories")
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CategoryDto postCategory(@RequestBody @Valid CategoryShortDto shortDto) {
         log.info("Post category: {}", shortDto);
         return categoryService.postCategory(shortDto);
     }
 
-    @DeleteMapping("/admin/categories/{catId}")
+    @DeleteMapping("/{catId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCategory(@PathVariable long catId) {
         log.info("Delete category: {}", catId);
         categoryService.deleteCategory(catId);
     }
 
-    @PatchMapping("/admin/categories/{catId}")
+    @PatchMapping("/{catId}")
+    @ResponseStatus(HttpStatus.OK)
     public CategoryDto updateCategory(@RequestBody @Valid CategoryShortDto shortDto, @PathVariable long catId) {
         log.info("Patch category id: {}, name {}", catId, shortDto);
         return categoryService.updateCategory(shortDto, catId);
