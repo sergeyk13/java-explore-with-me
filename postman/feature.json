@@ -1802,13 +1802,12 @@
 		},
 		{
 			"key": "comment",
-			"value": "",
-			"type": "string"
+			"value": ""
 		},
 		{
 			"key": "comid",
 			"value": "1",
-			"type": "string"
+			"type": "number"
 		},
 		{
 			"key": "eventId",
