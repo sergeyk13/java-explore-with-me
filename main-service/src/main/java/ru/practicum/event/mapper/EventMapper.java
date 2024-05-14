@@ -4,6 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
+import ru.practicum.comment.model.Comment;
 import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.dto.NewEventDto;
@@ -12,6 +13,7 @@ import ru.practicum.user.UserMapper;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static ru.practicum.util.Constant.FORMATTER;
 
@@ -32,6 +34,7 @@ public interface EventMapper {
 
     @Mapping(source = "initiator", target = "initiator")
     @Mapping(target = "eventDate", source = "eventDate", qualifiedByName = "mapDateToString")
+    @Mapping(target = "comments", source = "comments", qualifiedByName = "countComments")
     EventShortDto toEventShortDto(Event event);
 
     @Named("mapStringToDate")
@@ -44,5 +47,10 @@ public interface EventMapper {
         if (timestamp != null) {
             return timestamp.format(FORMATTER);
         } else return null;
+    }
+
+    @Named("countComments")
+    default int countComments(List<Comment> comments) {
+        return comments.size();
     }
 }
