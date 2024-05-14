@@ -1,18 +1,21 @@
 package ru.practicum;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.error.model.ValidationException;
 import ru.practicum.mapper.StatisticMapper;
 import ru.practicum.model.Statistic;
 
-import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class StatsServiceImpl implements StatsService {
     private StatsRepository statsRepository;
 
@@ -26,30 +29,52 @@ public class StatsServiceImpl implements StatsService {
     @Transactional(readOnly = true)
     @Override
     public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
-        uris = Optional.ofNullable(uris).orElseGet(() -> {
-            List<Statistic> statisticList = statsRepository.findByTimestampBetween(start, end);
-            return new ArrayList<>(getUris(statisticList));
-        });
+        checkTime(start, end);
+        Specification<Statistic> spec = Specification.where(null);
+        spec = spec.and(StatsSpecification.timestampBetween(start, end));
 
-        List<Statistic> allStatistics = statsRepository.findByTimestampBetween(start, end);
+        if (uris != null && !uris.isEmpty()) {
+            spec = spec.and(StatsSpecification.byUris(uris));
+        }
 
-        return uris.stream()
-                .flatMap(uri -> {
-                    List<String> uniqueIps = new ArrayList<>(statsRepository.findUniqueIpsBetween(uri, start, end));
-                    int hits = unique ? uniqueIps.size() : statsRepository.countByUriAndTimestampBetween(uri, start, end);
-                    if (hits > 0) {
-                        return Stream.of(new ViewStats(statsRepository.findFirstByUri(uri).getApp(), uri, hits));
+        if (unique) {
+            assert uris != null;
+            if (!uris.isEmpty()) {
+                spec = spec.and(StatsSpecification.uniqueIps());
+            }
+        }
+
+        List<Statistic> statistics = statsRepository.findAll(spec);
+        Map<String, Integer> uriToHitsMap = new HashMap<>();
+            List<String> urisFromStatistics = new ArrayList<>();
+            statistics.forEach(statistic -> urisFromStatistics.add(statistic.getUri()));
+
+        for (String uri : urisFromStatistics) {
+            List<String> uniqueIps = statsRepository.findUniqueIpsBetween(uri, start, end);
+            int hits = unique ? uniqueIps.size() : statsRepository.countByUriAndTimestampBetween(uri, start, end);
+            uriToHitsMap.put(uri, hits);
+        }
+
+        return uriToHitsMap.entrySet().stream()
+                .map(entry -> {
+                    String uri = entry.getKey();
+                    int hits = entry.getValue();
+                    Statistic statistic = statsRepository.findFirstByUri(uri);
+                    if (statistic != null) {
+                        return new ViewStats(statistic.getApp(), uri, hits);
                     } else {
-                        return Stream.empty();
+                        return null;
                     }
                 })
+                .filter(Objects::nonNull)
                 .sorted(Comparator.comparingLong(ViewStats::getHits).reversed())
                 .collect(Collectors.toList());
     }
 
-    private Set<String> getUris(List<Statistic> statisticList) {
-        return statisticList.stream()
-                .map(Statistic::getUri)
-                .collect(Collectors.toSet());
+    private static void checkTime(LocalDateTime start, LocalDateTime end) {
+        if (start.isAfter(end)) {
+            log.error("Start time is after end time");
+            throw new ValidationException("Не верно указан запрос дат");
+        }
     }
 }

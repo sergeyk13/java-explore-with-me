@@ -11,6 +11,8 @@ import ru.practicum.model.Statistic;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import static ru.practicum.constant.StringConstant.FORMAT;
+
 @Mapper
 public interface StatisticMapper {
     StatisticMapper INSTANCE = Mappers.getMapper(StatisticMapper.class);
@@ -25,8 +27,9 @@ public interface StatisticMapper {
     ViewStats toViewStats(Statistic statistic, int hits);
 
     @Named("mapTimestamp")
+
     default LocalDateTime mapTimestamp(String timestamp) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(FORMAT);
         return LocalDateTime.parse(timestamp, formatter);
     }
 }

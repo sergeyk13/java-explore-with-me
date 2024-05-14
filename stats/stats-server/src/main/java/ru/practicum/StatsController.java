@@ -8,8 +8,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import javax.validation.ValidationException;
-import javax.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -32,15 +30,10 @@ public class StatsController {
 
     @GetMapping("/stats")
     @ResponseStatus(HttpStatus.OK)
-    public List<ViewStats> getStats(@RequestParam @NotBlank @DateTimeFormat(pattern = FORMAT) LocalDateTime start,
-                                    @RequestParam @NotBlank @DateTimeFormat(pattern = FORMAT) LocalDateTime end,
+    public List<ViewStats> getStats(@RequestParam @DateTimeFormat(pattern = FORMAT) LocalDateTime start,
+                                    @RequestParam @DateTimeFormat(pattern = FORMAT) LocalDateTime end,
                                     @RequestParam(required = false) List<String> uris,
                                     @RequestParam(defaultValue = "false") boolean unique) {
-
-        if (start.isAfter(end)) {
-            log.error("Start time is after end time");
-            throw new ValidationException("Не верно указан запрос дат");
-        }
         log.info("Get stats start: {}, end: {}, uri: {}, unique: {}", start, end, uris, unique);
         return service.getStats(start, end, uris, unique);
     }
