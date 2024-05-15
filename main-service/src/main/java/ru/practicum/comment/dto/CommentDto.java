@@ -20,6 +20,6 @@ public class CommentDto {
     private String text;
     @NotNull
     private long authorId;
-    @NotNull
+    @NotBlank
     private String createdAt;
 }

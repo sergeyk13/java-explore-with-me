@@ -1,8 +1,6 @@
 package ru.practicum.event.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import ru.practicum.category.model.Category;
 import ru.practicum.comment.model.Comment;
 import ru.practicum.compilations.model.Compilation;
@@ -16,9 +14,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
+@Setter
+@ToString
 public class Event {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -61,6 +61,7 @@ public class Event {
     @ManyToOne
     private Compilation compilation;
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL)
+    @ToString.Exclude
     private List<Comment> comments;
 
 }

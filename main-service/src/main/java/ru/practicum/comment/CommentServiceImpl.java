@@ -20,6 +20,7 @@ import ru.practicum.event.repository.EventRepository;
 import ru.practicum.user.UserRepository;
 import ru.practicum.user.model.User;
 import ru.practicum.util.MapperPageToList;
+import ru.practicum.util.ValidationUtil;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -59,8 +60,11 @@ public class CommentServiceImpl implements CommentService {
         Comment comment = checkComment(commentDto.getId());
         checkOwner(user.getId(), commentDto.getAuthorId());
         if (commentDto.getText() != null) {
-            comment.setText(commentDto.getText());
-            log.info("Update comment text: {}", commentDto.getText());
+            if (!commentDto.getText().isBlank()) {
+                comment.setText(commentDto.getText());
+                ValidationUtil.checkValidation(comment);
+                log.info("Update comment text: {}", commentDto.getText());
+            }
         } else {
             log.error("Comment text is empty");
             throw new ValidationException("Comment text is empty");
@@ -89,6 +93,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
+    @Transactional
     public void deleteComment(long userId, long commentId) {
         User user = checkUser(userId);
         Comment comment = checkComment(commentId);
