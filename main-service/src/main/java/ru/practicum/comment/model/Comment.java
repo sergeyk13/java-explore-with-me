@@ -1,10 +1,11 @@
-package ru.practicum.request.model;
+package ru.practicum.comment.model;
 
 import lombok.*;
 import ru.practicum.event.model.Event;
 import ru.practicum.user.model.User;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
@@ -14,7 +15,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @ToString
-public class Request {
+public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -23,8 +24,7 @@ public class Request {
     @NotNull
     private LocalDateTime created;
     @ManyToOne
-    private User requester;
-    @NotNull
-    @Enumerated(EnumType.STRING)
-    private Status status;
+    private User author;
+    @NotBlank
+    private String text;
 }

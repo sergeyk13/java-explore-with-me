@@ -32,4 +32,6 @@ public class EventShortDto {
     private String title;
     @Min(0)
     private long views;
+    @Min(0)
+    private long comments;
 }

@@ -93,7 +93,7 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public List<ApiError> handleConflict(final Exception e) {
         List<ApiError> errors = new ArrayList<>();
-        log.error(e.getMessage(), e);
+        log.error(e.getMessage());
         errors.add(buildApiError(HttpStatus.CONFLICT, e));
         return errors;
     }
